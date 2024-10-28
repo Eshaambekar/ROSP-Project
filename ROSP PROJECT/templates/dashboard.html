@@ -1,1 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body.light-mode {
+            background-color: #f8f9fa;
+            color: #343a40;
+        }
+
+        body.dark-mode {
+            background-color: #343a40;
+            color: #f8f9fa;
+        }
+
+        .navbar, .form-control, .btn {
+            border-radius: 0.25rem;
+        }
+    </style>
+</head>
+<body class="light-mode">
+    <div class="container mt-5">
+        <h2>Stock Market Dashboard</h2>
+
+        <button id="modeToggle" class="btn btn-secondary mb-3">Switch to Dark Mode</button>
+
+        <form method="POST" class="form-inline">
+            <label for="stock_name" class="mr-2">Select Stock:</label>
+            <select name="stock_name" id="stock_name" class="form-control mr-2">
+                {% for name in stock_names %}
+                    <option value="{{ name }}" {% if name == stock_name %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="interval" class="mr-2">Select Interval:</label>
+            <select name="interval" id="interval" class="form-control mr-2">
+                <option value="1d">1 Day</option>
+                <option value="5m">5 Minutes</option>
+                <option value="1h">1 Hour</option>
+                <option value="1wk">1 Week</option>
+            </select>
+
+            <button type="submit" class="btn btn-primary">Update</button>
+        </form>
+
+        <h4 class="mt-4">Stock Data for: {{ stock_name }}</h4>
+        <canvas id="stockChart"></canvas>
+        <p class="mt-4">Average Sentiment: {{ avg_sentiment }}</p>
+        <p>Decision: <strong>{{ decision }}</strong></p>
+
+        <script>
+            const ctx = document.getElementById('stockChart').getContext('2d');
+
+            // Ensure that stock_data is not empty
+            {% if stock_data.shape[0] > 0 %}
+                const labels = {{ stock_data['Date'].tolist() | tojson }};
+                const data = {
+                    labels: labels,
+                    datasets: [{
+                        label: '{{ stock_name }} Closing Price',
+                        data: {{ stock_data['Close'].tolist() | tojson }},
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        fill: false
+                    }]
+                };
+
+                const config = {
+                    type: 'line',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Date'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Price'
+                                }
+                            }
+                        }
+                    }
+                };
+
+                const stockChart = new Chart(ctx, config);
+            {% else %}
+                console.error("No stock data available for {{ stock_name }}.");
+                // Optionally, you can show a message in the canvas or elsewhere in the UI
+                ctx.fillText("No data available for this stock.", 10, 50);
+            {% endif %}
+
+            // Toggle dark/light mode
+            document.getElementById('modeToggle').addEventListener('click', function() {
+                const body = document.body;
+                if (body.classList.contains('light-mode')) {
+                    body.classList.remove('light-mode');
+                    body.classList.add('dark-mode');
+                    this.textContent = 'Switch to Light Mode';
+                } else {
+                    body.classList.remove('dark-mode');
+                    body.classList.add('light-mode');
+                    this.textContent = 'Switch to Dark Mode';
+                }
+            });
+        </script>
+    </div>
+</body>
+</html>
 
